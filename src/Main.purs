@@ -4,9 +4,9 @@ import Prelude
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE, log)
 
-import Day1 as Day1
+import Day2 as Day2
 
 
-main :: forall e. Eff (console :: CONSOLE | e) Unit
 main = do
-  log $ show Day1.solution
+  solution <- Day2.solution
+  log $ show solution
