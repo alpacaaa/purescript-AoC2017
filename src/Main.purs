@@ -8,5 +8,5 @@ import Day3 as Day3
 
 
 main = do
-  solution <- Day3.solution
+  solution <- Day3.solution unit
   log $ show solution

@@ -3,18 +3,13 @@ module Day3 where
 import Data.Maybe
 import Prelude
 
-import Control.Bind ((=<<))
 import Control.Monad.Eff.Console (log)
 import Data.Array as Array
-import Data.Boolean (otherwise)
-import Data.Foldable (sum)
-import Data.Int as Int
 import Data.Map (Map(..))
 import Data.Map as Map
-import Data.String as String
-import Data.Traversable (traverse)
 import Data.Tuple (Tuple(..))
-import Debug.Trace as Debug
+import Data.Ord (abs)
+-- import Debug.Trace as Debug
 
 
 data Point =
@@ -29,8 +24,13 @@ instance showPoint :: Show Point where
 type Matrix =
     Map Point Int
 
-solution = do
-    pure 10
+solution _ = do
+    let target = 368078
+    let params = { point: Point {x: 1, y: -1}, current: 9, target }
+    let matrix = buildMatrix params initial
+    let Point { x, y } = position matrix target
+
+    pure (abs x + abs y)
 
 type Square a =
     {
@@ -60,18 +60,6 @@ data Position
 derive instance eqPosition  :: Eq  Position
 derive instance ordPosition :: Ord Position
 
-{--
-[
-    0, 0, 0,
-    1, 0, 0,
-    1, 0, 0
-]
---}
-
-
--- add :: Int -> Int -> Int -> (Matrix -> Matrix)
--- add x y n =
---     Map.insert (Point { x, y }) n
 
 initial =
     let
@@ -201,7 +189,8 @@ nextPosition square =
     else Center
 
 test = do
-    let params = { point: Point {x: 1, y: -1}, current: 9, target: 368078 }
+    let params = { point: Point {x: 1, y: -1}, current: 9, target: 23 }
     let matrix = buildMatrix params initial
-    log $ (show $ position matrix 368078)
+    log $ (show $ position matrix 23)
+    log "should be equal to 0, -2"
     pure unit
