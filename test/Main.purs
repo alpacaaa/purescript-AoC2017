@@ -5,8 +5,8 @@ import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE)
 
 
-import Day6 as Day6
+import Day7 as Day7
 
 main :: forall e. Eff (console :: CONSOLE | e) Unit
 main = do
-  Day6.test
+  Day7.test
