@@ -7,12 +7,11 @@ import Control.Monad.Eff.Console (log)
 import Control.MonadZero (guard)
 import Data.Array as Array
 import Data.Int as Int
-import Data.List as List
 import Data.Map (Map(..))
 import Data.Map as Map
 import Data.String as String
 import Data.Traversable (traverse)
-import Debug.Trace as Debug
+-- import Debug.Trace as Debug
 import Node.Encoding as Encoding
 import Node.FS.Sync as FS
 
@@ -38,6 +37,9 @@ type Instruction =
     , condition :: Condition
     }
 
+type Result =
+    Map String Int
+
 
 verifyCondition :: Int -> Condition -> Boolean
 verifyCondition a (Condition _ Equal b)          = a == b
@@ -51,6 +53,18 @@ verifyCondition a (Condition _ GreaterOrEqual b) = a >= b
 applyOperation :: Operation -> Int -> Int
 applyOperation (Increase amount) n = n + amount
 applyOperation (Decrease amount) n = n - amount
+
+
+applyInstruction :: Result -> Instruction -> Result
+applyInstruction result instruction =
+    let
+        register =
+            lookupValue instruction.register result
+
+        newValue =
+            applyOperation instruction.operation register 
+    in
+    Map.insert instruction.register newValue result
 
 
 parseOperation :: String -> Int -> Maybe Operation
@@ -85,15 +99,15 @@ parseInstruction input = do
         parts =
             String.split (String.Pattern " ") input
 
-    guard (Array.length parts /= 7)
+    guard (Array.length parts == 7)
 
     register <- Array.index parts 0
     op       <- Array.index parts 1
     amount   <- Array.index parts 2 >>= Int.fromString
-    cond     <- Array.index parts 3
     otherReg <- Array.index parts 4
     sign     <- Array.index parts 5
     target   <- Array.index parts 6 >>= Int.fromString
+
 
     operation <- parseOperation op amount
     condition <- parseCondition otherReg sign target
@@ -102,9 +116,8 @@ parseInstruction input = do
 
 
 solution _ = do
-    pure 55
-    -- input <- FS.readTextFile Encoding.UTF8 "input/day8.txt"
-    -- pure $ maybe "it's broken" id (solve input)
+    input <- FS.readTextFile Encoding.UTF8 "input/day8.txt"
+    pure $ maybe "it's broken" show (solve input)
 
 
 print input expected = do
@@ -113,9 +126,41 @@ print input expected = do
 
 solve :: String -> Maybe Int
 solve input =
-    Just 11
+    input
+    # String.split (String.Pattern "\n")
+    # traverse parseInstruction
+    # map (Array.foldl solve' Map.empty)
+    # map findResut
 
 
+lookupValue :: String -> Result -> Int
+lookupValue register result =
+    Map.lookup register result
+    # maybe 0 id -- Registers default to zero
+
+
+solve' :: Result -> Instruction -> Result
+solve' result instruction =
+    let
+        value =
+            lookupValue (conditionRegister instruction) result
+    in
+    if verifyCondition value instruction.condition
+        then applyInstruction result instruction
+        else result
+
+
+findResut :: Result -> Int
+findResut result =
+    Array.foldl max 0 result
+
+
+conditionRegister :: Instruction -> String
+conditionRegister instruction =
+    let
+        (Condition register _ _) = instruction.condition
+    in
+    register
 
 test = do
     let 
