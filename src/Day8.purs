@@ -130,7 +130,7 @@ solve input =
     # String.split (String.Pattern "\n")
     # traverse parseInstruction
     # map (Array.foldl solve' Map.empty)
-    # map findResut
+    # map findResult
 
 
 lookupValue :: String -> Result -> Int
@@ -150,8 +150,8 @@ solve' result instruction =
         else result
 
 
-findResut :: Result -> Int
-findResut result =
+findResult :: Result -> Int
+findResult result =
     Array.foldl max 0 result
 
 
