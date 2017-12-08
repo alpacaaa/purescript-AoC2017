@@ -30,7 +30,7 @@ data Sign
     | GreaterOrEqual
 
 data Condition
-    = Condition Sign Int Int
+    = Condition String Sign Int
 
 type Instruction =
     { register  :: String
@@ -39,13 +39,13 @@ type Instruction =
     }
 
 
-verifyCondition :: Condition -> Boolean
-verifyCondition (Condition Equal a b)          = a == b
-verifyCondition (Condition NotEqual a b)       = a /= b
-verifyCondition (Condition Less a b)           = a <  b
-verifyCondition (Condition LessOrEqual a b)    = a <= b
-verifyCondition (Condition Greater a b)        = a >  b
-verifyCondition (Condition GreaterOrEqual a b) = a >= b
+verifyCondition :: Int -> Condition -> Boolean
+verifyCondition a (Condition _ Equal b)          = a == b
+verifyCondition a (Condition _ NotEqual b)       = a /= b
+verifyCondition a (Condition _ Less b)           = a <  b
+verifyCondition a (Condition _ LessOrEqual b)    = a <= b
+verifyCondition a (Condition _ Greater b)        = a >  b
+verifyCondition a (Condition _ GreaterOrEqual b) = a >= b
 
 
 applyOperation :: Operation -> Int -> Int
@@ -60,9 +60,23 @@ parseOperation op amount =
         "dec" -> Just (Decrease amount)
         _     -> Nothing
 
+
+parseSign :: String -> Maybe Sign
+parseSign sign =
+    case sign of
+        "==" -> Just Equal
+        "!=" -> Just NotEqual
+        "<"  -> Just Less
+        "<=" -> Just LessOrEqual
+        ">"  -> Just Greater
+        ">=" -> Just GreaterOrEqual
+        _    -> Nothing
+
+
 parseCondition :: String -> String -> Int -> Maybe Condition
-parseCondition register sign amount =
-    Nothing
+parseCondition register sign' amount =
+    parseSign sign'
+    # map \sign -> Condition register sign amount
 
 
 parseInstruction :: String -> Maybe Instruction
@@ -84,7 +98,7 @@ parseInstruction input = do
     operation <- parseOperation op amount
     condition <- parseCondition otherReg sign target
 
-    Nothing :: Maybe Instruction
+    pure { register, operation, condition }
 
 
 solution _ = do
