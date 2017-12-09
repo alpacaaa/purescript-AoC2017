@@ -7,6 +7,7 @@ import Control.Monad.Eff.Console (log)
 import Control.MonadZero (guard)
 import Data.Array as Array
 import Data.Array ((:))
+import Data.Tuple (Tuple(..))
 import Data.Foldable (sum)
 import Data.Int as Int
 import Data.Map (Map(..))
@@ -31,8 +32,11 @@ derive instance eqToken :: Eq Token
 derive instance ordToken :: Ord Token
 
 
-type Level =
-    Int
+newtype Level =
+    Level Int
+
+derive newtype instance eqLevel :: Eq Level
+derive newtype instance ordLevel :: Ord Level
 
 type Result =
     Map Level Int
@@ -104,19 +108,34 @@ buildResult tokens level result =
     case Array.uncons tokens of
         Just { head, tail } ->
             if head == GroupOpen then
-                incLevel result level
-                # buildResult tail level
+                addGroupToLevel result level
+                # buildResult tail (incLevel level 1)
             else
-                buildResult tail (level - 1) result
+                buildResult tail (incLevel level (-1)) result
         Nothing ->
             result
 
 
-incLevel :: Result -> Level -> Result
-incLevel result level =
+addGroupToLevel :: Result -> Level -> Result
+addGroupToLevel result level =
     Map.lookup level result
     # maybe 1 (_ + 1)
     # \value -> Map.insert level value result
+
+
+incLevel :: Level -> Int -> Level
+incLevel (Level level) amount =
+    Level (level + amount)
+
+
+calculateScore :: Array (Tuple Level Int) -> Int
+calculateScore values =
+    let
+        mapper (Tuple (Level level) groups) =
+            level * groups
+    in
+    map mapper values
+    # sum
 
 
 solution _ = do
@@ -135,12 +154,15 @@ solve input =
             # filterChars
 
         result =
-            buildResult cleaned 1 Map.empty
+            buildResult cleaned (Level 1) Map.empty
 
         groups =
             sum (Map.values result)
+
+        score =
+            calculateScore (Map.toUnfoldable result)
     in
-    { groups, score: 10000 }
+    { groups, score }
 
 
 testGarbage input = do
