@@ -140,6 +140,17 @@ calculateScore values =
 
 solution _ = do
     input <- FS.readTextFile Encoding.UTF8 "input/day9.txt"
+
+    -- the following blows up the stack
+    -- instead of fixing the algorithm, why not run it on a beefier machine
+
+    -- amirite?
+
+    -- echo "console.log(require("./output/Day9").solution(false)())" > indeed.js
+    -- node --stack-size=3000 --max-old-space-size=8192 indeed.js
+
+    -- FIXED! lol
+
     let { score } = solve input
     pure $ show score
 
