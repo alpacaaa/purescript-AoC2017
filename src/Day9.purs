@@ -6,12 +6,13 @@ import Prelude
 import Control.Monad.Eff.Console (log)
 import Control.MonadZero (guard)
 import Data.Array as Array
+import Data.Array ((:))
 import Data.Int as Int
 import Data.Map (Map(..))
 import Data.Map as Map
 import Data.String as String
 import Data.Traversable (traverse)
--- import Debug.Trace as Debug
+import Debug.Trace as Debug
 import Node.Encoding as Encoding
 import Node.FS.Sync as FS
 
@@ -23,6 +24,10 @@ data Token
     | GarbageClose
     | IgnoreNext
     | AnyChar
+
+
+derive instance eqToken :: Eq Token
+derive instance ordToken :: Ord Token
 
 
 data Stream a
@@ -60,6 +65,32 @@ parseToken char =
         _   -> AnyChar
 
 
+filterIgnore :: Array Token -> Array Token
+filterIgnore tokens =
+    case Array.uncons tokens of
+        Just { head, tail } ->
+            if head == IgnoreNext then
+                filterIgnore (Array.drop 1 tail)
+            else
+                head : filterIgnore tail
+        Nothing ->
+            []
+
+filterGarbage :: Array Token -> Array Token
+filterGarbage tokens =
+    case Array.uncons tokens of
+        Just { head, tail } ->
+            if head == GarbageOpen then
+                Array.dropWhile (_ /= GarbageClose) tail
+                # Array.drop 1
+                # filterGarbage
+            else
+                head : filterGarbage tail
+
+        Nothing ->
+            []
+
+
 solution _ = do
     input <- FS.readTextFile Encoding.UTF8 "input/day9.txt"
     let { score } = solve input
@@ -72,7 +103,20 @@ solve input =
 
 
 testGarbage input = do
-    log "Garbage OK"
+    let
+        result =
+            tokenize input
+            # filterIgnore
+            # filterGarbage
+
+    log input
+
+    case result of
+        [] -> log "Garbage OK"
+        _  -> log "Garbage FAIL"
+
+    log ""
+
 
 
 print input groups score = do
