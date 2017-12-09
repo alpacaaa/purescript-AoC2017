@@ -7,6 +7,7 @@ import Control.Monad.Eff.Console (log)
 import Control.MonadZero (guard)
 import Data.Array as Array
 import Data.Array ((:))
+import Data.Foldable (sum)
 import Data.Int as Int
 import Data.Map (Map(..))
 import Data.Map as Map
@@ -30,9 +31,11 @@ derive instance eqToken :: Eq Token
 derive instance ordToken :: Ord Token
 
 
-data Stream a
-    = Group a
-    | Garbage
+type Level =
+    Int
+
+type Result =
+    Map Level Int
 
 
 tokenize :: String -> Array Token
@@ -91,6 +94,31 @@ filterGarbage tokens =
             []
 
 
+filterChars :: Array Token -> Array Token
+filterChars tokens =
+    Array.filter (_ /= AnyChar) tokens
+
+
+buildResult :: Array Token -> Level -> Result -> Result
+buildResult tokens level result =
+    case Array.uncons tokens of
+        Just { head, tail } ->
+            if head == GroupOpen then
+                incLevel result level
+                # buildResult tail level
+            else
+                buildResult tail (level - 1) result
+        Nothing ->
+            result
+
+
+incLevel :: Result -> Level -> Result
+incLevel result level =
+    Map.lookup level result
+    # maybe 1 (_ + 1)
+    # \value -> Map.insert level value result
+
+
 solution _ = do
     input <- FS.readTextFile Encoding.UTF8 "input/day9.txt"
     let { score } = solve input
@@ -99,7 +127,20 @@ solution _ = do
 
 solve :: String -> { groups :: Int, score :: Int }
 solve input =
-    { groups: 1, score: 10 }
+    let
+        cleaned =
+            tokenize input
+            # filterIgnore
+            # filterGarbage
+            # filterChars
+
+        result =
+            buildResult cleaned 1 Map.empty
+
+        groups =
+            sum (Map.values result)
+    in
+    { groups, score: 10000 }
 
 
 testGarbage input = do
@@ -140,14 +181,14 @@ test = do
 
     log "\n"
 
-    -- print "{}" 1 1
-    -- print "{{{}}}" 3 6
-    -- print "{{},{}}" 3 5
-    -- print "{{{},{},{{}}}}" 6 16
-    -- print "{<{},{},{{}}>}" 1 1
-    -- print "{<a>,<a>,<a>,<a>}" 1 1
-    -- print "{{<a>},{<a>},{<a>},{<a>}}" 5 9
-    -- print "{{<!>},{<!>},{<!>},{<a>}}" 2 3
+    print "{}" 1 1
+    print "{{{}}}" 3 6
+    print "{{},{}}" 3 5
+    print "{{{},{},{{}}}}" 6 16
+    print "{<{},{},{{}}>}" 1 1
+    print "{<a>,<a>,<a>,<a>}" 1 1
+    print "{{<a>},{<a>},{<a>},{<a>}}" 5 9
+    print "{{<!>},{<!>},{<!>},{<a>}}" 2 3
     pure unit
 
 
